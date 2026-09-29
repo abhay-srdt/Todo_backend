@@ -5,7 +5,6 @@ import com.example.todobackend.entity.Todo;
 import com.example.todobackend.entity.User;
 import com.example.todobackend.repository.TodoRepository;
 import com.example.todobackend.repository.UserRepository;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,7 +21,7 @@ public class TodoService {
     public List<Todo> getAllTodos(){
         return todoRepository.findAll();
     }
-    @PreAuthorize("#userId == authentication.principal.id")
+
     public List<Todo> getTodosByUser(Long userId) {
 
         return todoRepository.findByUserId(userId);
