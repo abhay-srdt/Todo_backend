@@ -17,6 +17,11 @@ public class Todo {
     private String title;
     private String description;
     private LocalDate dueDate;
+
+    // Existing rows get false automatically
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean completed = false;
+
     public Todo() {
     }
 
@@ -51,6 +56,14 @@ public class Todo {
 
     public String getDescription() {
         return description;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 
     public Todo(Long id, User user, LocalDate date, String title, String description, LocalDate dueDate) {

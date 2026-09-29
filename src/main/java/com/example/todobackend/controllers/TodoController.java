@@ -1,10 +1,8 @@
 package com.example.todobackend.controllers;
 
+import com.example.todobackend.dto.CompletedRequest;
 import com.example.todobackend.entity.Todo;
-import com.example.todobackend.entity.User;
-import com.example.todobackend.repository.UserRepository;
 import com.example.todobackend.service.TodoService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,64 +16,62 @@ import java.util.List;
 @RestController
 public class TodoController {
     private final TodoService todoService;
-    private final UserRepository userRepository;
 
-    public TodoController(TodoService todoService, UserRepository userRepository) {
+    public TodoController(TodoService todoService) {
         this.todoService = todoService;
-        this.userRepository = userRepository;
     }
 
-    // Admin-only — enforced by hasRole("ADMIN") in SecurityConfig for this exact path
+    // Admin-only, enforced by hasRole("ADMIN") in SecurityConfig for this exact path
     @GetMapping
-    public List<Todo> getAllTodos(){
+    public List<Todo> getAllTodos() {
         return todoService.getAllTodos();
     }
 
     @GetMapping("/date/{userId}/{date}")
     public ResponseEntity<List<Todo>> getTodosByDate(
-            @PathVariable LocalDate date, @PathVariable Long userId) {
-        List<Todo> todos = todoService.getTodosByDate(date, userId);
-        return ResponseEntity.ok(todos);
+            @PathVariable LocalDate date,
+            @PathVariable Long userId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(todoService.getTodosByDate(date, userId, jwt.getSubject()));
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Todo>> getTodosByUser(
             @PathVariable Long userId,
             @AuthenticationPrincipal Jwt jwt) {
-
-        System.out.println("REACHED getTodosByUser, email=" + jwt.getSubject());
-
-        String email = jwt.getSubject();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No local user record for: " + email));
-
-        System.out.println("OWNER CHECK token-user=" + currentUser.getId() + " path-user=" + userId);
-
-        if (!currentUser.getId().equals(userId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        return ResponseEntity.ok(todoService.getTodosByUser(userId));
+        return ResponseEntity.ok(todoService.getTodosByUser(userId, jwt.getSubject()));
     }
 
     @PostMapping("/user/{userId}")
-    public ResponseEntity<Todo> createTodo(@PathVariable Long userId, @RequestBody Todo todo){
-        return ResponseEntity.ok(
-                todoService.createTodo(userId, todo)
-        );
+    public ResponseEntity<Todo> createTodo(
+            @PathVariable Long userId,
+            @RequestBody Todo todo,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(todoService.createTodo(userId, todo, jwt.getSubject()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Todo> updateTodo(
             @PathVariable Long id,
-            @RequestBody Todo updatedTodo) {
-        Todo savedTodo = todoService.updateTodo(id, updatedTodo);
-        return ResponseEntity.ok(savedTodo);
+            @RequestBody Todo updatedTodo,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(todoService.updateTodo(id, updatedTodo, jwt.getSubject()));
+    }
+
+    // Body: { "completed": true }
+    @PutMapping("/{id}/completed")
+    public ResponseEntity<Todo> setCompleted(
+            @PathVariable Long id,
+            @RequestBody CompletedRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(todoService.setCompleted(id, request.completed(), jwt.getSubject()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTodo(@PathVariable Long id) {
-        todoService.deleteTodo(id);
+    public ResponseEntity<Void> deleteTodo(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        todoService.deleteTodo(id, jwt.getSubject());
         return ResponseEntity.noContent().build();
     }
 }
