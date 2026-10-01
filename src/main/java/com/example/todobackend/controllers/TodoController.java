@@ -20,8 +20,6 @@ public class TodoController {
     public TodoController(TodoService todoService) {
         this.todoService = todoService;
     }
-
-    // Admin-only, enforced by hasRole("ADMIN") in SecurityConfig for this exact path
     @GetMapping
     public List<Todo> getAllTodos() {
         return todoService.getAllTodos();
